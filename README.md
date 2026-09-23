@@ -244,19 +244,3 @@ validation từng trường và cách hoạt động của model event/seeder.
 - Lệnh `php artisan db:table leads --json` hoạt động; bản định dạng bảng cần
   extension PHP `intl` mà image hiện chưa cài.
 
-## Cập nhật ảnh demo
-
-Ảnh PNG nằm trong [`docs/images`](docs/images) và dùng đường dẫn tương đối,
-nên hiển thị ngay khi xem README trên GitHub, không phụ thuộc vào localhost.
-Khi nộp mã nguồn, nhớ đưa cả thư mục ảnh vào repository.
-
-Trên Windows có Edge hoặc Chrome, khởi động ứng dụng rồi chạy:
-
-```powershell
-npm run build
-powershell -NoProfile -File docs/capture-screenshots.ps1
-```
-
-Script chụp bốn màn hình bằng trình duyệt chạy nền với profile tạm riêng,
-không thay đổi dữ liệu lead. Chụp với dữ liệu giả; cập nhật chú thích nếu
-số lượng lead khác bộ seed gốc.
