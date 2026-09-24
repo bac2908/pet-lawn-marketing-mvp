@@ -101,8 +101,40 @@ class LeadScoringServiceTest extends TestCase
         $service = new LeadScoringService;
 
         $this->assertSame($service->calculate($lead), $service->calculate($lead));
+        $this->assertSame($service->explain($lead), $service->explain($lead));
         $this->assertSame($attributes, $lead->getAttributes());
         $this->assertFalse($lead->exists);
+    }
+
+    #[DataProvider('explanationCases')]
+    public function test_explanation_shows_the_points_and_reasons_used_by_calculate(
+        int $budget, string $interest, ?string $painPoint, string $location, array $points, string $segment,
+    ): void {
+        $lead = new Lead(['budget' => $budget, 'interest_level' => $interest, 'pain_point' => $painPoint, 'location' => $location]);
+        $service = new LeadScoringService;
+        $result = $service->explain($lead);
+
+        $this->assertSame($points, array_column($result['breakdown'], 'points'));
+        $this->assertSame(array_sum($points), $result['score']);
+        $this->assertSame($segment, $result['segment']);
+        $this->assertNotEmpty($result['segment_reason']);
+        $this->assertSame(['Ngân sách', 'Mức độ quan tâm', 'Nhu cầu', 'Địa điểm'], array_column($result['breakdown'], 'label'));
+        foreach ($result['breakdown'] as $factor) {
+            $this->assertNotEmpty($factor['reason']);
+        }
+        $this->assertSame($service->calculate($lead), ['score' => $result['score'], 'segment' => $result['segment']]);
+    }
+
+    public static function explanationCases(): array
+    {
+        return [
+            'HOT' => [5_000_000, 'high', 'Cần dễ vệ sinh.', 'HCM', [30, 30, 20, 20], 'HOT'],
+            'WARM' => [2_000_000, 'medium', null, 'HCM', [20, 20, 0, 20], 'WARM'],
+            'COLD' => [1_000_000, 'low', '   ', 'Hà Nội', [10, 10, 0, 10], 'COLD'],
+            'exactly 80' => [2_000_000, 'high', 'Cần dễ vệ sinh.', 'Hà Nội', [20, 30, 20, 10], 'HOT'],
+            'exactly 50' => [0, 'low', '0', 'Hà Nội', [10, 10, 20, 10], 'WARM'],
+            'normalized inputs' => [4_999_999, ' MEDIUM ', null, ' thành PHỐ hồ chí minh ', [20, 20, 0, 20], 'WARM'],
+        ];
     }
 
     public function test_unknown_interest_is_rejected_instead_of_silently_scored(): void

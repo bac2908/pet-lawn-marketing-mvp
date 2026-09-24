@@ -3,9 +3,7 @@ import './bootstrap';
 // Make server-side success and validation messages easy to find after a redirect.
 document.querySelector('[data-form-feedback]')?.focus();
 
-const leadForm = document.querySelector('[data-lead-form]');
-
-if (leadForm) {
+document.querySelectorAll('[data-lead-form]').forEach((leadForm) => {
     const submitButton = leadForm.querySelector('button[type="submit"]');
 
     leadForm.addEventListener('submit', () => {
@@ -18,4 +16,4 @@ if (leadForm) {
         submitButton.disabled = false;
         submitButton.removeAttribute('aria-busy');
     });
-}
+});

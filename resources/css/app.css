@@ -207,6 +207,8 @@ input:focus, select:focus, textarea:focus { border-color: #557c3f; outline: 2px 
 .lead-table td > strong { display: block; font-size: 13px; font-weight: 600; }
 .lead-table td > span:not(.segment-badge, .lead-status) { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
 .lead-table .lead-customer { min-width: 210px; }
+.lead-detail-link { color: var(--green); text-decoration: underline; text-decoration-color: #c0d0b5; text-underline-offset: 4px; }
+.lead-detail-link:hover { text-decoration-color: var(--green); }
 .lead-budget, .lead-date { white-space: nowrap; }
 .lead-table .lead-score { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lead-table td.lead-score > span { display: inline; font-size: 10px; font-weight: 400; }
@@ -232,6 +234,109 @@ input:focus, select:focus, textarea:focus { border-color: #557c3f; outline: 2px 
 .page-disabled { color: #8b9386; background: #f8f9f5; }
 .page-current { padding-inline: 4px; white-space: nowrap; }
 .dashboard-footer { display: flex; justify-content: space-between; gap: 16px; padding-block: 24px; color: var(--muted); font-size: 11px; }
+
+/* Lead details and care status */
+.lead-detail-main { padding-top: 28px; }
+.lead-back-link { color: var(--muted); font-size: 13px; text-decoration: none; }
+.lead-back-link:hover { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
+.lead-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-block: 23px 30px; }
+.lead-detail-heading > div { min-width: 0; }
+.lead-detail-heading h1 { margin-block: 10px; font-size: clamp(28px, 3vw, 38px); overflow-wrap: anywhere; }
+.lead-detail-heading p:not(.eyebrow) { font-size: 14px; }
+.lead-detail-heading > .lead-status { flex-shrink: 0; padding: 6px 14px; background: #fff; font-size: 13px; }
+.lead-detail-feedback { margin: 0 0 24px; }
+.lead-detail-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 24px; }
+.lead-details-column { display: grid; gap: 24px; min-width: 0; }
+.lead-detail-card { min-width: 0; padding: 28px; background: #fff; border: 1px solid var(--border); border-radius: 16px; }
+.lead-detail-card h2 { font-size: 21px; letter-spacing: -.02em; }
+.lead-card-intro { margin-top: 10px; font-size: 13px; }
+.lead-information { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 28px 0; }
+.lead-information dt { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+.lead-information dd { font-size: 14px; font-weight: 550; margin: 0; overflow-wrap: anywhere; }
+.lead-pain-point { border-top: 1px solid #e5eadf; padding-top: 22px; }
+.lead-pain-point h3 { font-size: 14px; }
+.lead-pain-point p { margin-top: 12px; color: #344d3b; font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.lead-time-note { margin-top: 20px; font-size: 11px; }
+.lead-status-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 16px; margin-top: 25px; }
+.lead-status-form .button { margin-top: 27px; min-height: 48px; padding-block: 11px; }
+.lead-status-note { margin-top: 17px; font-size: 12px; }
+.lead-score-overview { padding: 22px; margin-bottom: 28px; border-radius: 12px; background: #f1f5eb; }
+.lead-score-number { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-block: 5px; }
+.lead-score-number > strong { font-size: 54px; line-height: 1.2; font-weight: 650; letter-spacing: -.05em; color: var(--green); }
+.lead-score-number > span:not(.segment-badge) { color: var(--muted); font-size: 16px; }
+.lead-score-number .segment-badge { align-self: center; margin-left: auto; font-size: 12px; padding: 5px 12px; }
+.lead-score-overview > p:last-child { font-size: 12px; }
+.score-breakdown { list-style: none; padding: 0; margin: 22px 0 0; }
+.score-breakdown li { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding-block: 19px; border-bottom: 1px solid #e8ede1; }
+.score-breakdown h3 { font-size: 14px; }
+.score-breakdown p { font-size: 12px; margin-top: 6px; }
+.score-breakdown li > strong { flex-shrink: 0; color: var(--green); font-size: 20px; font-weight: 600; }
+.score-calculation { padding-top: 22px; }
+.score-calculation > span { display: block; font-size: 12px; color: var(--muted); }
+.score-calculation > strong { display: block; margin-top: 5px; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.score-segment-result { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
+.score-segment-result p { font-size: 12px; }
+.score-explanation-note { margin-top: 24px; padding-top: 18px; border-top: 1px solid #e8ede1; font-size: 11px; }
+.lead-score-notice { margin-top: 20px; padding: 14px; border: 1px solid #ead5a5; border-radius: 8px; background: #fff9e9; }
+.lead-score-notice strong { font-size: 13px; color: #77551c; }
+.lead-score-notice p { margin-top: 5px; font-size: 12px; color: #77551c; }
+
+/* Lead care workflow */
+.status-overview { margin-top: 28px; }
+.status-overview h2 { font-size: 18px; letter-spacing: -.02em; margin-bottom: 15px; }
+.status-overview-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.status-stat { display: flex; flex-direction: column; padding: 18px; background: #fff; border: 1px solid var(--border); border-radius: 12px; text-decoration: none; }
+.status-stat:hover { background: #f5f9ef; border-color: #9db387; }
+.status-stat > span:first-child { font-size: 12px; color: var(--muted); }
+.status-stat > strong { margin-block: 5px; font-size: 26px; line-height: 1.4; color: var(--green); }
+.status-stat-action { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #64745a; }
+.lead-heading-actions { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+.lead-heading-actions .lead-status { padding: 5px 12px; background: #fff; }
+.care-count { color: var(--muted); font-size: 13px; font-weight: 500; margin-left: 8px; }
+.lead-care-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 24px; }
+.lead-note-form { display: grid; gap: 14px; margin-top: 23px; }
+.lead-note-form textarea { min-height: 100px; }
+.lead-note-form .button { justify-self: start; }
+.care-timeline { padding: 0; margin: 25px 0 0; list-style: none; }
+.care-timeline li { padding-block: 17px; border-top: 1px solid #e5eadf; }
+.care-timeline time { color: var(--muted); font-size: 11px; }
+.care-note-body { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 7px; font-size: 13px; color: #344d3b; }
+.care-status-change { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
+.care-status-change strong { color: var(--green); font-weight: 600; }
+.care-empty { font-size: 13px; color: var(--muted); }
+.care-pagination { margin-top: 8px; flex-wrap: wrap; }
+.lead-edit-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.lead-edit-summary h2 { margin-top: 14px; overflow-wrap: anywhere; }
+.lead-edit-summary > p:not(.eyebrow) { margin-top: 18px; font-size: 14px; }
+.lead-edit-summary .edit-score { color: var(--green); }
+.edit-score strong { font-size: 36px; letter-spacing: -.04em; }
+.lead-edit-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px; }
+
+@media (max-width: 1000px) {
+    .lead-heading-actions { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; }
+    .lead-edit-layout { grid-template-columns: 1fr; }
+    .lead-edit-summary { grid-row: 1; }
+    .status-overview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+    .lead-heading-actions { justify-content: flex-start; }
+    .status-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lead-edit-actions { flex-direction: column; }
+}
+
+@media (max-width: 900px) {
+    .lead-detail-grid, .lead-care-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .lead-detail-heading { align-items: flex-start; flex-direction: column; gap: 14px; }
+    .lead-detail-card { padding: 22px 20px; }
+    .lead-information { grid-template-columns: 1fr; gap: 18px; }
+    .lead-status-form { grid-template-columns: 1fr; }
+    .lead-status-form .button { margin-top: 0; }
+    .score-calculation > strong { font-size: 20px; }
+}
 
 @media (max-width: 1100px) {
     .dashboard-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }

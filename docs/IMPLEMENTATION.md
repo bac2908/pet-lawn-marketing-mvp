@@ -12,6 +12,9 @@ lợi ích và biểu mẫu nhận tư vấn. Lead hợp lệ được chấm đ
 Đã có phần nền, model Lead, bảng `leads`, 10 lead mẫu, chấm điểm theo quy tắc
 và luồng tiếp nhận lead công khai. Dashboard tại `/dashboard` hiển thị thống kê,
 danh sách lead, tìm kiếm, bộ lọc và phân trang.
+Trang chi tiết `/leads/{lead}` giải thích điểm, ghi chú và lịch sử trạng thái chăm sóc.
+Form `/leads/{lead}/edit` cập nhật thông tin và chấm lại điểm; dashboard có thống kê
+năm trạng thái và giữ bộ lọc khi quay lại danh sách.
 Chưa triển khai AI, machine learning hoặc REST API.
 Không có giao diện đăng nhập, thanh toán, Redis hoặc tiến trình queue.
 
@@ -319,8 +322,8 @@ tránh lặp redirect về URL lỗi. Thay bộ lọc bằng form sẽ trở v�
 
 Dashboard chỉ đọc `score` và `segment` đã lưu; không tính lại điểm hoặc
 ghi dữ liệu khi mở trang. Luồng chấm điểm tập trung trong service của bước 3
-vẫn được dùng khi khách gửi form. Trạng thái được hiển thị và lọc;
-bước này chưa có thao tác cập nhật trạng thái hoặc trang chi tiết lead.
+vẫn được dùng khi khách gửi form. Bước 5 hiển thị và lọc trạng thái;
+bước 6 bên dưới bổ sung trang chi tiết và thao tác cập nhật.
 
 | Thành phần | Tệp |
 | --- | --- |
@@ -340,9 +343,9 @@ docker compose exec app php artisan test
 ```
 
 Không cần chạy `migrate:fresh` hoặc seed lại để sử dụng dashboard.
-MySQL hiện có 10 lead: **HOT = 2, WARM = 7, COLD = 1**.
+Database vừa seed có 10 lead: **HOT = 2, WARM = 7, COLD = 1**.
 
-Đã kiểm tra **88 tests / 358 assertions**, gồm 28 trường hợp dashboard;
+Tại thời điểm hoàn thành bước 5: **88 tests / 358 assertions**, gồm 28 trường hợp dashboard;
 Laravel Pint và Vite build đều đạt. Các test dashboard kiểm tra thống kê,
 tìm kiếm, lọc kết hợp, năm trạng thái, phân trang, thứ tự, trường nullable,
 HTML escaping, đầu vào không hợp lệ và việc không thay đổi dữ liệu khi xem.
@@ -356,6 +359,180 @@ landing page, tải lại dashboard để xem dữ liệu mới.
 
 Dashboard chưa có đăng nhập theo phạm vi MVP hiện tại. Dùng cho demo cục bộ
 với cổng `127.0.0.1:8000`; cần bảo vệ quyền truy cập trước khi công khai dữ liệu lead.
+
+## Chi tiết Lead, giải thích điểm và trạng thái — bước 6
+
+Từ dashboard, bấm vào tên khách hàng để mở chi tiết. Trang hiển thị liên hệ,
+thú cưng, địa điểm, ngân sách, mức quan tâm, nguồn, nhu cầu và thời gian theo giờ
+Việt Nam. Thông tin khách hàng được escape bằng Blade; nhu cầu giữ xuống dòng.
+
+Routes mới:
+
+- `GET /leads/{lead}` → `LeadController::show()`, tên `leads.show`.
+- `PATCH /leads/{lead}/status` → `LeadController::updateStatus()`, tên `leads.status.update`.
+
+Route model binding tìm Lead theo ID; ID không tồn tại hoặc không phải số trả 404.
+Các route thuộc middleware web, dùng CSRF cho form cập nhật. Theo phạm vi MVP,
+chưa có authentication; chỉ dùng trên môi trường local hiện có.
+
+`LeadScoringService::explain(Lead $lead)` trả về `score`, `segment`,
+`segment_reason` và `breakdown` gồm bốn tiêu chí với `label`, `points`, `reason`.
+`calculate()` lấy `score` và `segment` từ kết quả này, giữ nguyên API của bước 3.
+Các ngưỡng điểm không thay đổi; service vẫn thuần tính toán và không lưu model.
+Blade chỉ trình bày kết quả, không chứa công thức scoring.
+
+Điểm đã lưu được hiển thị riêng. Nếu khác với kết quả tính từ dữ liệu hiện tại,
+trang nêu rõ sự khác biệt. GET chi tiết không cập nhật điểm, tránh việc chỉ xem
+trang đã gây thay đổi dữ liệu. Không thêm thao tác tính lại điểm ở bước này.
+
+`Lead::STATUS_LABELS` là danh sách chung cho form chi tiết, validation và bộ lọc:
+
+| Giá trị lưu | Nhãn |
+| --- | --- |
+| new | Mới |
+| contacted | Đã liên hệ |
+| qualified | Đủ điều kiện |
+| converted | Đã chuyển đổi |
+| lost | Không thành công |
+
+`UpdateLeadStatusRequest` chỉ cho phép một trong năm giá trị. Controller chỉ gán
+`status`, lưu rồi redirect về trang chi tiết với thông báo tiếng Việt. Các trường
+gửi thêm như name, budget, score hoặc segment không được đưa vào dữ liệu cập nhật.
+Event chấm điểm chỉ chạy khi tạo, nên cập nhật trạng thái không tính lại score.
+MVP cho phép chuyển trực tiếp giữa năm trạng thái, chưa có state machine.
+Lịch sử được bổ sung trong phần cải tiến bên dưới, cùng hai migration mới.
+
+Tệp chính: `resources/views/leads/show.blade.php`,
+`app/Http/Requests/UpdateLeadStatusRequest.php`, `LeadController`,
+`LeadScoringService`, `Lead`, `DashboardRequest`, `routes/web.php` và CSS hiện có.
+Header dùng chung qua `resources/views/components/dashboard-header.blade.php`.
+JS hiện có xử lý focus thông báo và ngăn nhấn gửi liên tiếp cho form trạng thái.
+
+Tại thời điểm hoàn thành bước 6: **114 tests / 607 assertions**, Pint và Vite build đạt.
+Unit tests xác nhận breakdown khớp phép tính; feature tests xác nhận đủ năm
+trạng thái, input lỗi, HTML escaping, nullable, 404, giữ nguyên các trường khác,
+không ghi khi xem chi tiết và không tính lại điểm khi cập nhật trạng thái.
+Đã thử POST với `_method=PATCH`, CSRF/session và redirect trên MySQL thực;
+thiếu CSRF trả 419. Bản ghi QA đã được xóa riêng, đối chiếu xác nhận 13 lead
+có sẵn không đổi.
+
+Ảnh đã kiểm tra: [desktop](images/lead-detail.png) và
+[điện thoại](images/lead-detail-mobile.png). Có thể chụp lại riêng hai ảnh
+bằng Node.js với Edge/Chrome cài sẵn:
+
+```powershell
+node docs/capture-screenshots.mjs http://localhost:8000 lead-detail.png lead-detail-mobile.png
+```
+
+Script mặc định dùng lead mẫu ID 1, chỉ đọc dữ liệu; không gửi form.
+Có thể chọn lead khác bằng `$env:SCREENSHOT_LEAD_ID = '2'` trước khi chạy.
+
+## Bốn cải tiến trước bước 7
+
+### 1. Chỉnh sửa Lead và chấm lại điểm
+
+- `GET /leads/{lead}/edit` → `LeadController::edit()`, tên `leads.edit`.
+- `PUT /leads/{lead}` → `LeadController::update()`, tên `leads.update`.
+- `UpdateLeadRequest` kế thừa quy tắc của `StoreLeadRequest`, chỉ đổi nơi redirect
+  khi validation lỗi. Form giữ giá trị nhập, hiển thị lỗi tiếng Việt và dùng CSRF.
+- Tám trường khách hàng được cập nhật; `score`, `segment`, `status`, ID và thời gian
+  không lấy trực tiếp từ request. Ngân sách cho phép số nguyên bất kỳ trong giới hạn
+  cột unsigned integer, nên không làm mất ngân sách cũ như 450.000 VND.
+- Controller gán dữ liệu hợp lệ, gọi `LeadScoringService::calculate()` rồi lưu một lần.
+  Tính lại điểm là thao tác tường minh khi lưu form sửa. Event `creating` vẫn chỉ
+  phục vụ lead mới; GET, đổi trạng thái và thêm ghi chú không chấm lại điểm.
+
+Ví dụ đã kiểm tra: ngân sách 450.000, quan tâm medium, có nhu cầu, Hà Nội
+→ 10 + 20 + 20 + 10 = **60/WARM**. Đổi riêng ngân sách thành 5.000.000
+→ 30 + 20 + 20 + 10 = **80/HOT**. Trạng thái và dữ liệu chăm sóc không đổi.
+
+### 2. Ghi chú và lịch sử trạng thái
+
+Hai migration thêm bảng mới, không sửa dữ liệu trong bảng `leads`:
+
+| Bảng | Các cột |
+| --- | --- |
+| `lead_notes` | `id` bigint PK, `lead_id` bigint FK, `body` text, `created_at`, `updated_at` |
+| `lead_status_histories` | `id` bigint PK, `lead_id` bigint FK, `from_status` varchar(255), `to_status` varchar(255), `created_at`, `updated_at` |
+
+Cả hai FK trỏ đến `leads.id`, cascade khi lead bị xóa; có index `(lead_id, created_at)`.
+`Lead` có quan hệ `notes()` và `statusHistories()`; hai model con có `belongsTo(Lead::class)`.
+
+`POST /leads/{lead}/notes` → `LeadController::storeNote()`, tên `leads.notes.store`.
+`StoreLeadNoteRequest` yêu cầu nội dung văn bản không rỗng, tối đa 2.000 ký tự.
+Controller tạo ghi chú qua quan hệ của lead trong URL, không nhận `lead_id` do form gửi.
+Blade escape nội dung và giữ xuống dòng. Ghi chú hiện chỉ hỗ trợ thêm/xem.
+
+`updateStatus()` đọc lại lead bằng `lockForUpdate()` trong transaction, so sánh
+trạng thái thật trong database với giá trị mới. Chỉ khi khác nhau mới lưu lead và
+thêm dòng lịch sử chứa trạng thái trước/sau. Nhờ cùng transaction, lỗi ghi lịch sử
+sẽ rollback cả cập nhật trạng thái; hai cập nhật đồng thời không dùng trạng thái cũ
+từ route binding để tạo lịch sử sai. Gửi lại cùng trạng thái không tạo dòng trùng.
+
+Ghi chú và lịch sử hiển thị mới nhất trước (`created_at`, rồi `id`), mỗi phần 5 dòng/trang,
+dùng `notes_page` và `history_page`. Thời gian hiển thị theo giờ Việt Nam.
+Chỉ ghi nhận lịch sử từ các lần cập nhật qua luồng này; không suy dựng các lần đổi
+trạng thái trước đây hoặc tự theo dõi câu lệnh SQL/cập nhật model ở bên ngoài controller.
+Chưa có người thao tác vì dự án chưa triển khai authentication.
+
+### 3. Thống kê tiến độ chăm sóc
+
+`DashboardController` nhóm và đếm theo `status`, điền 0 cho trạng thái chưa có lead.
+Năm ô thống kê dùng chung `Lead::STATUS_LABELS`; luôn đếm toàn bộ dữ liệu,
+độc lập với bộ lọc. Bấm một ô sẽ lọc trạng thái đó, giữ tìm kiếm, nguồn, phân nhóm,
+sắp xếp hiện tại và quay về trang đầu.
+
+### 4. Giữ ngữ cảnh danh sách
+
+Dashboard truyền `back[q]`, `back[segment]`, `back[status]`, `back[source]`,
+`back[sort]`, `back[page]` vào liên kết chi tiết. Liên kết sửa, các form, redirect
+thành công/validation lỗi và nút quay lại tiếp tục truyền cùng ngữ cảnh.
+
+`DashboardContext::fromRequest()` chỉ giữ tham số hợp lệ theo `DashboardRequest`.
+Không nhận URL redirect tùy ý; ngữ cảnh lỗi sẽ về dashboard mặc định. Cách dùng
+query string không ghi đè bộ lọc của tab khác bằng một biến session chung.
+Nếu lead vừa đổi phân nhóm/trạng thái làm trang cuối không còn kết quả,
+dashboard redirect về trang hợp lệ cuối cùng, giữ nguyên bộ lọc.
+
+### Chạy và kiểm chứng
+
+Trên dự án đã có dữ liệu:
+
+```powershell
+docker compose up -d
+docker compose exec app php artisan migrate
+npm run build
+docker compose exec app php artisan test
+docker compose exec app vendor/bin/pint --test
+```
+
+Không chạy `migrate:fresh` hoặc seed lại cho cải tiến này. Hai migration đã chạy
+trên MySQL local, giữ nguyên 13 lead hiện có (5 HOT, 7 WARM, 1 COLD).
+
+Kết quả: **150 tests / 883 assertions**, Pint và Vite build đạt. Sau khi chỉnh
+bố cục trang chi tiết, chạy lại 56 test liên quan cũng đạt (464 assertions).
+Ba tệp test mới: `LeadEditingTest`, `LeadCareTest`, `DashboardWorkflowTest`.
+Phạm vi gồm validation, gọi đúng service, bảo toàn trạng thái/ghi chú khi sửa,
+HTML escaping, phân trang ghi chú, lịch sử đúng thứ tự, rollback, thống kê,
+giữ bộ lọc qua mọi form và xử lý trang cuối trống.
+
+Đã kiểm tra HTTP thực với CSRF/session và MySQL: sửa 60/WARM → 80/HOT,
+thêm ghi chú, Mới → Đã liên hệ → Đủ điều kiện; lưu lặp không thêm lịch sử,
+form lỗi không đổi database, thiếu CSRF trả 419. Lead QA riêng được xóa sau khi
+chụp ảnh; đối chiếu SHA-256 của dữ liệu theo ID xác nhận 13 lead gốc không đổi.
+
+Ảnh đã xem: dashboard desktop, chi tiết/chỉnh sửa desktop 1440px và điện thoại 390px,
+cùng phần [ghi chú và lịch sử](images/lead-care.png). Chụp lại bằng script hiện có:
+
+```powershell
+# Chọn ID đang tồn tại nếu muốn chụp một lead cụ thể.
+$env:SCREENSHOT_LEAD_ID = '1'
+node docs/capture-screenshots.mjs http://localhost:8000 dashboard.png dashboard-hot.png lead-detail.png lead-detail-mobile.png lead-edit.png lead-edit-mobile.png lead-care.png
+```
+
+Ảnh chi tiết/chỉnh sửa/ghi chú trong README sử dụng lead demo riêng đã hoàn tất
+luồng chăm sóc. Dữ liệu này không được thêm vào seeder hoặc giữ lại sau QA.
+Bước 7 chưa được triển khai.
 
 ## Dừng và xem log
 

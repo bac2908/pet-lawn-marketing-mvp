@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Lead;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DashboardRequest extends FormRequest
@@ -19,7 +20,7 @@ class DashboardRequest extends FormRequest
         return [
             'q' => ['nullable', 'string', 'max:255'],
             'segment' => ['nullable', 'string', 'in:HOT,WARM,COLD'],
-            'status' => ['nullable', 'string', 'in:new,contacted,qualified,converted,lost'],
+            'status' => ['nullable', 'string', 'in:'.implode(',', array_keys(Lead::STATUS_LABELS))],
             'source' => ['nullable', 'string', 'max:255'],
             'sort' => ['nullable', 'string', 'in:newest,score_desc'],
             'page' => ['nullable', 'integer', 'min:1', 'max:1000000'],

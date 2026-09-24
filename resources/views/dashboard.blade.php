@@ -9,7 +9,7 @@
     </head>
     <body class="dashboard-page">
         @php
-            $statusLabels = ['new' => 'Mới', 'contacted' => 'Đã liên hệ', 'qualified' => 'Đủ điều kiện', 'converted' => 'Đã chuyển đổi', 'lost' => 'Không thành công'];
+            $statusLabels = \App\Models\Lead::STATUS_LABELS;
             $petLabels = ['dog' => 'Chó', 'cat' => 'Mèo', 'other' => 'Khác'];
             $interestLabels = ['low' => 'Thấp', 'medium' => 'Trung bình', 'high' => 'Cao'];
             $segmentClasses = ['HOT' => 'hot', 'WARM' => 'warm', 'COLD' => 'cold'];
@@ -17,26 +17,7 @@
         @endphp
 
         <a class="skip-link" href="#dashboard-content">Đến nội dung chính</a>
-        <header class="dashboard-header">
-            <div class="dashboard-container dashboard-header-inner">
-                <a class="brand" href="{{ route('dashboard') }}" aria-label="Pet Lawn — Dashboard">
-                    <span class="brand-icon">
-                        <svg viewBox="0 0 32 32" aria-hidden="true">
-                            <ellipse cx="7" cy="11" rx="3.5" ry="4.5" transform="rotate(-25 7 11)" />
-                            <ellipse cx="14" cy="6" rx="3.3" ry="4.5" />
-                            <ellipse cx="22" cy="7" rx="3.3" ry="4.5" transform="rotate(20 22 7)" />
-                            <ellipse cx="27" cy="14" rx="3" ry="4" transform="rotate(30 27 14)" />
-                            <path d="M7 23c0-4 6-11 10-11s10 7 10 11c0 6-6 5-10 3-4 2-10 3-10-3Z" />
-                        </svg>
-                    </span>
-                    Pet Lawn<span class="brand-dot">.</span>
-                </a>
-                <nav aria-label="Điều hướng dashboard">
-                    <a class="dashboard-nav-active" href="{{ route('dashboard') }}" aria-current="page">Dashboard</a>
-                    <a class="button button-outline button-small" href="{{ route('home') }}">Trang giới thiệu <span aria-hidden="true">↗</span></a>
-                </nav>
-            </div>
-        </header>
+        <x-dashboard-header />
 
         <main id="dashboard-content" class="dashboard-container dashboard-main">
             <div class="dashboard-heading">
@@ -66,6 +47,19 @@
                 <p class="stats-note">Thống kê toàn bộ lead, không thay đổi theo bộ lọc bên dưới.</p>
             </section>
 
+            <section class="status-overview" aria-labelledby="status-overview-heading">
+                <h2 id="status-overview-heading">Tiến độ chăm sóc</h2>
+                <div class="status-overview-grid">
+                    @foreach ($statusLabels as $status => $label)
+                        <a class="status-stat" href="{{ route('dashboard', array_merge($filters, ['status' => $status])) }}#lead-list-heading">
+                            <span>{{ $label }}</span><strong>{{ number_format($statusStats[$status], 0, ',', '.') }}</strong>
+                            <span class="status-stat-action">Lọc trạng thái <span aria-hidden="true">↗</span></span>
+                        </a>
+                    @endforeach
+                </div>
+                <p class="stats-note">Số lượng theo trạng thái trên toàn bộ dữ liệu. Bấm một ô để lọc danh sách.</p>
+            </section>
+
             @if ($errors->any())
                 <div class="feedback feedback-error" role="alert" tabindex="-1" data-form-feedback>
                     <strong>Bộ lọc chưa hợp lệ. Vui lòng chọn lại.</strong>
@@ -81,7 +75,7 @@
                 <div class="lead-list-heading">
                     <div>
                         <h2 id="lead-list-heading">Danh sách lead <span>{{ number_format($leads->total(), 0, ',', '.') }}</span></h2>
-                        <p>{{ $hasFilters ? 'Kết quả phù hợp với bộ lọc đã chọn.' : 'Thông tin được ghi nhận từ form nhận tư vấn.' }}</p>
+                        <p>{{ $hasFilters ? 'Kết quả phù hợp với bộ lọc đã chọn.' : 'Bấm vào tên khách hàng để xem chi tiết và cập nhật trạng thái.' }}</p>
                     </div>
                 </div>
 
@@ -152,7 +146,7 @@
                             <tbody>
                                 @foreach ($leads as $lead)
                                     <tr>
-                                        <td class="lead-customer"><strong>{{ $lead->name }}</strong><span>{{ $lead->contact ?: 'Chưa có liên hệ' }}</span></td>
+                                        <td class="lead-customer"><strong><a class="lead-detail-link" href="{{ route('leads.show', ['lead' => $lead, 'back' => $back]) }}">{{ $lead->name }}</a></strong><span>{{ $lead->contact ?: 'Chưa có liên hệ' }}</span></td>
                                         <td><strong>{{ $petLabels[$lead->pet_type] ?? $lead->pet_type }}</strong><span>{{ $lead->location }}</span></td>
                                         <td><strong class="lead-budget">{{ number_format($lead->budget, 0, ',', '.') }} ₫</strong><span>Quan tâm: {{ $interestLabels[$lead->interest_level] ?? $lead->interest_level }}</span></td>
                                         <td>{{ $lead->source ?: 'Chưa rõ' }}</td>

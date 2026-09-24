@@ -7,6 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const baseUrl = new URL(process.argv[2] ?? 'http://localhost:8000');
+const leadId = process.env.SCREENSHOT_LEAD_ID ?? '1';
+if (!/^[1-9]\d*$/.test(leadId)) throw new Error('SCREENSHOT_LEAD_ID must be a positive integer.');
 if (!['localhost', '127.0.0.1', '[::1]'].includes(baseUrl.hostname)) {
     throw new Error('This script only captures the local demo app.');
 }
@@ -76,8 +78,16 @@ try {
         { file: 'lead-form.png', route: '/', width: 1440, height: 1100, selector: '#lead-form' },
         { file: 'dashboard.png', route: '/dashboard', width: 1600, height: 1000, fullPage: true },
         { file: 'dashboard-hot.png', route: '/dashboard?segment=HOT&sort=score_desc', width: 1600, height: 1000, fullPage: true },
+        { file: 'lead-detail.png', route: `/leads/${leadId}`, width: 1440, height: 1000, fullPage: true },
+        { file: 'lead-detail-mobile.png', route: `/leads/${leadId}`, width: 390, height: 844, fullPage: true },
+        { file: 'lead-edit.png', route: `/leads/${leadId}/edit`, width: 1440, height: 1000, fullPage: true },
+        { file: 'lead-edit-mobile.png', route: `/leads/${leadId}/edit`, width: 390, height: 844, fullPage: true },
+        { file: 'lead-care.png', route: `/leads/${leadId}`, width: 1440, height: 1000, selector: '#lead-care' },
     ];
-    for (const capture of captures) {
+    const selectedFiles = process.argv.slice(3);
+    const selectedCaptures = selectedFiles.length ? captures.filter(capture => selectedFiles.includes(capture.file)) : captures;
+    if (!selectedCaptures.length) throw new Error('No matching screenshot name.');
+    for (const capture of selectedCaptures) {
         await send('Emulation.setDeviceMetricsOverride', {
             width: capture.width, height: capture.height, deviceScaleFactor: 1, mobile: false,
         });

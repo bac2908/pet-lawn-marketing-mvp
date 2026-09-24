@@ -4,9 +4,18 @@ namespace App\Models;
 
 use App\Services\LeadScoringService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lead extends Model
 {
+    public const STATUS_LABELS = [
+        'new' => 'Mới',
+        'contacted' => 'Đã liên hệ',
+        'qualified' => 'Đủ điều kiện',
+        'converted' => 'Đã chuyển đổi',
+        'lost' => 'Không thành công',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -43,6 +52,16 @@ class Lead extends Model
         static::creating(function (Lead $lead): void {
             $lead->fill(app(LeadScoringService::class)->calculate($lead));
         });
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(LeadNote::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(LeadStatusHistory::class);
     }
 
     /**
